@@ -17,7 +17,7 @@ namespace FontGenerator
 #endif";
 
 		const string StrStartFont		= "START_FONT";
-		const string StrFontAddres		= "FONT_START_OFFSET";
+		const string StrFontAddress		= "FONT_START_OFFSET";
 		const string StrCharSetWidth	= "CHARSET_WIDTH";
 		const string StrCharHeight		= "CHAR_HEIGHT";
 		const string StrFirstChar		= "FIRST_CHAR";
@@ -44,7 +44,7 @@ namespace FontGenerator
 				Offset = 0;
 
 				Predefine1(StrStartFont);
-				Predefine1(StrFontAddres);
+				Predefine1(StrFontAddress);
 				Predefine1(StrCharSetWidth);
 				Predefine1(StrCharHeight);
 				Predefine1(StrFirstChar);
@@ -75,7 +75,7 @@ namespace FontGenerator
 
 				Writer.WriteLine();
 				Undefine(StrStartFont);
-				Undefine(StrFontAddres);
+				Undefine(StrFontAddress);
 				Undefine(StrCharSetWidth);
 				Undefine(StrCharHeight);
 				Undefine(StrFirstChar);
@@ -110,7 +110,7 @@ namespace FontGenerator
 			{
 				Writer.WriteLine();
 				DefineHead(StrStartFont, fontBits.name);
-				DefineValue(StrFontAddres, Offset);
+				DefineValue(StrFontAddress, Offset);
 				DefineValue(StrCharSetWidth, fontBits.strideFont);
 				DefineValue(StrCharHeight, fontBits.height);
 				DefineValue(StrFirstChar, fontBits.chFirst);
@@ -133,18 +133,21 @@ namespace FontGenerator
 			}
 		}
 
-		public void WriteCharSet(string name, Collection<CharSet.Glyph> glyphs)
+		public void WriteCharSet(CharSet charSet)
 		{
-			if (glyphs.Count == 0)
+			int charVal;
+
+			if (charSet.Glyphs.Count == 0)
 				return;
 
 			Writer.WriteLine();
-			DefineHead(StrStartCharSet, name);
+			DefineHead(StrStartCharSet, charSet.Name);
 
-			foreach (CharSet.Glyph glyph in glyphs)
-				Writer.WriteLine("\t" + StrDefineChar + "({0}, {1}, {2})", name, glyph.Name, glyph.Char);
+			charVal = charSet.LastChar;
+			foreach (CharSet.Glyph glyph in charSet.Glyphs)
+				Writer.WriteLine("\t" + StrDefineChar + "({0}, {1}, {2})", charSet.Name, glyph.Name, ++charVal);
 
-			DefineHead(StrEndCharSet, name);
+			DefineHead(StrEndCharSet, charSet.Name);
 		}
 
 		void Predefine1(string macro)

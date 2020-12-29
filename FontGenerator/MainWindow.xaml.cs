@@ -684,7 +684,7 @@ namespace FontGenerator
 			}
 
 			foreach (CharSet charSet in m_project.CharSets)
-				output.WriteCharSet(charSet.Name, charSet.Glyphs);
+				output.WriteCharSet(charSet);
 
 			output.Close();
 		}
