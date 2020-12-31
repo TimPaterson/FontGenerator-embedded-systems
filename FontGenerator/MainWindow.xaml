@@ -18,11 +18,13 @@
 						<ColumnDefinition Width="*"></ColumnDefinition>
 						<ColumnDefinition Width="*"></ColumnDefinition>
 						<ColumnDefinition Width="*"></ColumnDefinition>
+						<ColumnDefinition Width="auto"></ColumnDefinition>
 					</Grid.ColumnDefinitions>
 					<Button x:Name="btnNew"  Grid.Column="0" Width="60" Content="New" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10,10,0,10" Click="btnNew_Click" />
 					<Button x:Name="btnOpen" Grid.Column="1" Width="60" Content="Open" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10,0,0,0" Click="btnOpen_Click" />
 					<Button x:Name="btnSave" Grid.Column="2" Width="60" Content="Save" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10,0,0,0" Click="btnSave_Click" />
-					<Button x:Name="btnGenerate" Grid.Column="3" Width="60" Content="Generate" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10,0,10,0" Click="btnGenerate_Click" />
+					<Button x:Name="btnGenerate" Grid.Column="3" Width="60" Content="Generate" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10,0,0,0" Click="btnGenerate_Click" />
+					<CheckBox x:Name="chkGenerateXml" Grid.Column="4" Content="Generate XML" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10,0,10,0" Checked="chkGenerateXml_Changed" Unchecked="chkGenerateXml_Changed"/>
 				</Grid>
 			</GroupBox>
 			<GroupBox Header="Font" DockPanel.Dock="Top">

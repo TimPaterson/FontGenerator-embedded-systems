@@ -12,8 +12,10 @@ namespace FontGenerator
 		int strideChar, 
 		int strideFont, 
 		int height, 
+		int fontHeight,
 		int chFirst, 
-		int cntChar
+		int cntChar,
+		FontChar font
 	);
 
 	public class CharSet : NamedItem
@@ -109,7 +111,7 @@ namespace FontGenerator
 				}
 			}
 
-			return new FontBits(name, arbFont, arWidth, stride, maxWidth, height, FirstChar, cChars);
+			return new FontBits(name, arbFont, arWidth, stride, maxWidth, height, (int)font.FontSize, FirstChar, cChars, font);
 		}
 
 		protected byte[] ConvertToMonochrome(BitmapSource bmp, int GrayLevel)

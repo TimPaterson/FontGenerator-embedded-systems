@@ -47,13 +47,14 @@ namespace FontGenerator
 		{
 			public ObservableCollection<FontInfo> FontInfos { get; set; }
 			public ObservableCollection<CharSet> CharSets { get; set; }
-			public bool PreSerialize()
+			public bool GenerateXml { get; set; }
+			public bool PreSerialize(bool fShowError)
 			{
 				foreach (FontInfo fontInfo in FontInfos)
 				{
-					if (!fontInfo.PreSerialize())
+					if (!fontInfo.PreSerialize() && fShowError)
 					{
-						MessageBox.Show($"The character set used by font {fontInfo} must be given a name before it can be saved.", 
+						MessageBox.Show($"The character set used by font {fontInfo} must be given a name before it can be saved.",
 							MainWindow.StrTitle, MessageBoxButton.OK, MessageBoxImage.Error);
 						return false;
 					}
@@ -76,6 +77,7 @@ namespace FontGenerator
 		NamedItem m_namedItem;
 		ListBox m_curList;
 		string m_projectFileName;
+		string m_serializedProject;
 		int m_lastRow = 1;
 
 		#endregion
@@ -96,6 +98,16 @@ namespace FontGenerator
 
 		public static ICollection<FontFamily> FontFamilies { get; } = Fonts.SystemFontFamilies;
 		public Brush TableLabelBrush => CharTableLabelBrush;
+		bool IsModifed
+		{
+			get
+			{
+				m_project.PreSerialize(false);
+				string str = JsonSerializer.Serialize<Project>(m_project, 
+					new JsonSerializerOptions() { WriteIndented = true });
+				return m_serializedProject != str;
+			}
+		}
 
 		string ProjectFileName
 		{
@@ -107,7 +119,7 @@ namespace FontGenerator
 			}
 		}
 		FontInfo CurrentFont
-		{ 
+		{
 			get
 			{
 				FontInfo info = (FontInfo)lstFonts.SelectedItem;
@@ -252,8 +264,10 @@ namespace FontGenerator
 		{
 			int maxRow;
 
-			m_project = JsonSerializer.Deserialize<Project>(File.ReadAllText(fileName));
+			m_serializedProject = File.ReadAllText(fileName);
+			m_project = JsonSerializer.Deserialize<Project>(m_serializedProject);
 			m_project.PostDeserialize();
+			chkGenerateXml.IsChecked = m_project.GenerateXml;
 			ProjectFileName = Path.GetFullPath(fileName);
 			Settings.Default.LastProjectFileName = ProjectFileName;
 
@@ -275,10 +289,11 @@ namespace FontGenerator
 
 		void SaveProject(string fileName)
 		{
-			if (m_project.PreSerialize())
+			if (m_project.PreSerialize(true))
 			{
-				File.WriteAllText(fileName, JsonSerializer.Serialize<Project>(m_project, 
-					new JsonSerializerOptions() { WriteIndented = true }));
+				m_serializedProject = JsonSerializer.Serialize<Project>(m_project, 
+					new JsonSerializerOptions() { WriteIndented = true });
+				File.WriteAllText(fileName, m_serializedProject);
 				Settings.Default.LastProjectFileName = ProjectFileName;
 			}
 		}
@@ -303,7 +318,13 @@ namespace FontGenerator
 
 			m_project.FontInfos.Add(new() { Name = StrEmptyItem });
 
+			chkGenerateXml.IsChecked = m_project.GenerateXml;
 			ShowProject();
+
+			// Remember our state
+			m_project.PreSerialize(false);
+			m_serializedProject = JsonSerializer.Serialize<Project>(m_project, 
+				new JsonSerializerOptions() { WriteIndented = true });
 		}
 
 		void ShowProject()
@@ -372,6 +393,47 @@ namespace FontGenerator
 			m_curList = lstNamedChar;
 		}
 
+		bool CheckForSave()
+		{
+			MessageBoxResult result;
+
+			if (IsModifed)
+			{
+				result = MessageBox.Show("Save changes before exit?", StrTitle, MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+				if (result == MessageBoxResult.Cancel)
+					return true;
+
+				if (result == MessageBoxResult.Yes)
+				{
+					if (string.IsNullOrEmpty(ProjectFileName) && PromptSaveFile())
+						return true;	// cancel
+
+					SaveProject(ProjectFileName);
+				}
+			}
+			return false;
+		}
+
+		bool PromptSaveFile()
+		{
+			Microsoft.Win32.SaveFileDialog dlg;
+
+			dlg = new Microsoft.Win32.SaveFileDialog();
+			dlg.Filter = StrProjectFileFilter;
+			try
+			{
+				dlg.InitialDirectory = Path.GetDirectoryName(Settings.Default.LastProjectFileName);
+				dlg.FileName = Path.GetFileName(Settings.Default.LastProjectFileName);
+			}
+			catch { }
+
+			if (dlg.ShowDialog(this) != true)
+				return true;	// cancel
+
+			ProjectFileName = dlg.FileName;
+			return false;
+		}
+
 		#endregion
 
 
@@ -400,6 +462,7 @@ namespace FontGenerator
 
 		private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
 		{
+			e.Cancel = CheckForSave();
 			Settings.Default.MainWindowPlacement = this.GetPlacement();
 			Settings.Default.Save();
 		}
@@ -628,12 +691,18 @@ namespace FontGenerator
 
 		private void btnNew_Click(object sender, RoutedEventArgs e)
 		{
+			if (CheckForSave())
+				return;
+
 			NewProject();
 		}
 
 		private void btnOpen_Click(object sender, RoutedEventArgs e)
 		{
 			Microsoft.Win32.OpenFileDialog dlg;
+
+			if (CheckForSave())	// true => cancel
+				return;
 
 			dlg = new();
 			dlg.Filter = StrProjectFileFilter;
@@ -645,24 +714,8 @@ namespace FontGenerator
 
 		private void btnSave_Click(object sender, RoutedEventArgs e)
 		{
-			if (string.IsNullOrEmpty(ProjectFileName))
-			{
-				Microsoft.Win32.SaveFileDialog dlg;
-
-				dlg = new Microsoft.Win32.SaveFileDialog();
-				dlg.Filter = StrProjectFileFilter;
-				try
-				{
-					dlg.InitialDirectory = Path.GetDirectoryName(Settings.Default.LastProjectFileName);
-					dlg.FileName = Path.GetFileName(Settings.Default.LastProjectFileName);
-				}
-				catch { }
-
-				if (dlg.ShowDialog(this) == true)
-					ProjectFileName = dlg.FileName;
-			}
-
-			SaveProject(ProjectFileName);
+			if (!string.IsNullOrEmpty(ProjectFileName) || !PromptSaveFile())
+				SaveProject(ProjectFileName);
 		}
 
 		private void btnGenerate_Click(object sender, RoutedEventArgs e)
@@ -672,10 +725,18 @@ namespace FontGenerator
 
 			if (m_project.FontInfos.Count == 0)
 				return;
+
+			if (string.IsNullOrEmpty(ProjectFileName))
+			{
+				if (PromptSaveFile())
+					return;		// cancel
+
+				SaveProject(ProjectFileName);
+			}
 			
 			output = new();
-			fileName = Path.Combine(Path.GetDirectoryName(m_projectFileName), Path.GetFileNameWithoutExtension(m_projectFileName));
-			output.Open(fileName + ".h", fileName + ".bin");
+			fileName = Path.Combine(Path.GetDirectoryName(ProjectFileName), Path.GetFileNameWithoutExtension(ProjectFileName));
+			output.Open(fileName + ".h", fileName + ".bin", m_project.GenerateXml ? fileName + ".xml" : null);
 
 			foreach (FontInfo fontInfo in m_project.FontInfos)
 			{
@@ -712,6 +773,11 @@ namespace FontGenerator
 						Debug.WriteLine("No GlyphTypeface");
 				}
 			}
+		}
+
+		private void chkGenerateXml_Changed(object sender, RoutedEventArgs e)
+		{
+			m_project.GenerateXml = chkGenerateXml.IsChecked == true;
 		}
 
 		#endregion

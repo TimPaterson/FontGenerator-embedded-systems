@@ -20,6 +20,7 @@ namespace FontGenerator
 		const string StrFontAddress		= "FONT_START_OFFSET";
 		const string StrCharSetWidth	= "CHARSET_WIDTH";
 		const string StrCharHeight		= "CHAR_HEIGHT";
+		const string StrFontHeight		= "FONT_SIZE";
 		const string StrFirstChar		= "FIRST_CHAR";
 		const string StrLastChar		= "LAST_CHAR";
 		const string StrCharStride		= "CHAR_STRIDE";
@@ -32,11 +33,15 @@ namespace FontGenerator
 		const string StrEndCharSet		= "END_CHARSET";
 		const string StrDefineChar		= "DEFINE_CHAR";
 
+		const string StrXmlFont = "<Font Name='{0}' FontFamily='{1}' FontStyle='{2}' FontWeight='{3}' FontStretch='{4}' FontSize='{5}'/>";
+		const string StrXmlSize = "<Set Name='{0}_Height' Value='{1}'/>";
+
 		StreamWriter Writer;
 		FileStream Stream;
+		StreamWriter Xml;
 		int Offset;
 
-		public void Open(string fileNameHeader, string fileNameBinary)
+		public void Open(string fileNameHeader, string fileNameBinary, string fileNameXml)
 		{
 			if (fileNameHeader != null)
 			{
@@ -47,6 +52,7 @@ namespace FontGenerator
 				Predefine1(StrFontAddress);
 				Predefine1(StrCharSetWidth);
 				Predefine1(StrCharHeight);
+				Predefine1(StrFontHeight);
 				Predefine1(StrFirstChar);
 				Predefine1(StrLastChar);
 				Predefine1(StrCharStride);
@@ -61,9 +67,10 @@ namespace FontGenerator
 			}
 
 			if (fileNameBinary != null)
-			{
 				Stream = new FileStream(fileNameBinary, FileMode.Create);
-			}
+
+			if (fileNameXml != null)
+				Xml = new StreamWriter(fileNameXml);
 		}
 
 		public void Close()
@@ -78,6 +85,7 @@ namespace FontGenerator
 				Undefine(StrFontAddress);
 				Undefine(StrCharSetWidth);
 				Undefine(StrCharHeight);
+				Undefine(StrFontHeight);
 				Undefine(StrFirstChar);
 				Undefine(StrLastChar);
 				Undefine(StrCharStride);
@@ -99,6 +107,12 @@ namespace FontGenerator
 				Stream.Close();
 				Stream = null;
 			}
+
+			if (Xml != null)
+			{
+				Xml.Close();
+				Xml = null;
+			}
 		}
 
 		public void WriteFont(FontBits fontBits)
@@ -113,6 +127,7 @@ namespace FontGenerator
 				DefineValue(StrFontAddress, Offset);
 				DefineValue(StrCharSetWidth, fontBits.strideFont);
 				DefineValue(StrCharHeight, fontBits.height);
+				DefineValue(StrFontHeight, fontBits.fontHeight);
 				DefineValue(StrFirstChar, fontBits.chFirst);
 				DefineValue(StrLastChar, fontBits.cntChar - 1);
 				DefineValue(StrCharStride, fontBits.strideChar);
@@ -130,6 +145,15 @@ namespace FontGenerator
 			if (Stream != null)
 			{
 				Stream.Write(fontBits.arPx, 0, fontBits.arPx.Length);
+			}
+
+			if (Xml != null)
+			{
+				FontChar font;
+
+				font = fontBits.font;
+				Xml.WriteLine(StrXmlFont, fontBits.name, font.FontFamily, font.FontStyle, font.FontWeight, font.FontStretch, font.FontSize);
+				Xml.WriteLine(StrXmlSize, fontBits.name, fontBits.height);
 			}
 		}
 
