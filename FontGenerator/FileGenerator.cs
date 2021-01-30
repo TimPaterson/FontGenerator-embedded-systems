@@ -34,7 +34,7 @@ namespace FontGenerator
 		const string StrDefineChar		= "DEFINE_CHAR";
 
 		const string StrXmlFont = "<Font Name='{0}' FontFamily='{1}' FontStyle='{2}' FontWeight='{3}' FontStretch='{4}' FontSize='{5}'/>";
-		const string StrXmlSize = "<Set Name='{0}_Height' Value='{1}'/>";
+		const string StrXmlSize = "<Set>{0}_Height = {1}</Set>";
 
 		StreamWriter Writer;
 		FileStream Stream;
