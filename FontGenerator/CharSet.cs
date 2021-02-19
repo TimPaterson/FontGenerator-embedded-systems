@@ -12,6 +12,7 @@ namespace FontGenerator
 		int[] arWidth,
 		int strideChar,
 		int strideFont,
+		int bytesPerPixel,
 		int height,
 		int fontHeight,
 		int chFirst,
@@ -124,13 +125,19 @@ namespace FontGenerator
 			//
 			// stride of character
 			if (f16bits)
-				stride = ((maxWidth + 15) / 16) * 2;
+				stride = ((maxWidth + 15) / 16);	// 16-bit pixels
 			else
 				stride = (maxWidth + 7) / 8;
 
 			height = bmp.PixelHeight;
-			maxWidth = stride * cChars; // stride of full row
-			maxWidth = (maxWidth + 3) & ~3; // align to 4-byte boundary
+			maxWidth = stride * cChars; // stride of full row in pixels
+			maxWidth = (maxWidth + 3) & ~3; // align to 4-pixel boundary
+			if (f16bits)
+			{
+				// convert pixels to bytes
+				maxWidth *= 2;
+				stride *= 2;
+			}
 			arbFont = new byte[height * maxWidth];
 			for (i = 0; i < height; i++)
 			{
@@ -143,7 +150,7 @@ namespace FontGenerator
 				}
 			}
 
-			return new FontBits(name, arbFont, arWidth, stride, maxWidth, height, (int)font.FontSize, FirstChar, cChars, font);
+			return new FontBits(name, arbFont, arWidth, stride, maxWidth, f16bits ? 2 : 1, height, (int)font.FontSize, FirstChar, cChars, font);
 		}
 
 		//****************************************************************************

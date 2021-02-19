@@ -125,12 +125,12 @@ namespace FontGenerator
 				Writer.WriteLine();
 				DefineHead(StrStartFont, fontBits.name);
 				DefineValue(StrFontAddress, Offset);
-				DefineValue(StrCharSetWidth, fontBits.strideFont);
+				DefineValue(StrCharSetWidth, fontBits.strideFont / fontBits.bytesPerPixel);
 				DefineValue(StrCharHeight, fontBits.height);
 				DefineValue(StrFontHeight, fontBits.fontHeight);
 				DefineValue(StrFirstChar, fontBits.chFirst);
 				DefineValue(StrLastChar, fontBits.cntChar - 1);
-				DefineValue(StrCharStride, fontBits.strideChar);
+				DefineValue(StrCharStride, fontBits.strideChar / fontBits.bytesPerPixel);
 
 				DefineValue(StrCharWidths, fontBits.name);
 				for (int i = 0; i < fontBits.cntChar; i++)

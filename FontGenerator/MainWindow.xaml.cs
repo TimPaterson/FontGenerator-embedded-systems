@@ -804,7 +804,6 @@ namespace FontGenerator
 							fontBits.arPx[i] = fontBits.arPx[i + 1];
 							fontBits.arPx[i + 1] = b;
 						}
-
 					}
 					output.WriteFont(fontBits);
 				}
