@@ -84,6 +84,8 @@ namespace FontGenerator
 		string m_projectFileName;
 		string m_serializedProject;
 		int m_lastRow = 1;
+		int m_lastCharChode = -1;
+		bool m_fDragging;
 
 		#endregion
 
@@ -230,7 +232,9 @@ namespace FontGenerator
 						TextAlignment = TextAlignment.Center,
 					};
 					textBlock.SetBinding(TextBlock.FontFamilyProperty, binding);
-					textBlock.MouseDown += CharSet_MouseDown;
+					textBlock.MouseLeftButtonDown += CharSet_MouseLeftButtonDown;
+					textBlock.MouseLeftButtonUp += CharSet_MouseLeftButtonUp;
+					textBlock.MouseEnter += CharSet_MouseEnter;
 
 					border = new()
 					{
@@ -259,10 +263,15 @@ namespace FontGenerator
 			return (TextBlock)((Border)grdChar.Children[row * 17 + col]).Child;
 		}
 
-		void ShowSelectedChar(CharSet charSet, bool isSelected)
+		void ShowCharRange(CharSet charSet, bool isSelected)
 		{
 			for (int i = charSet.FirstChar; i <= charSet.LastChar; i++)
 				GetCharTableElement(i).Background = isSelected ? SelectedCharSequenceBrush : null;
+		}
+
+		void ShowAllSelectedChar(CharSet charSet, bool isSelected = true)
+		{
+			ShowCharRange(charSet, isSelected);
 
 			foreach (CharSet.Glyph glyph in charSet.Glyphs)
 				GetCharTableElement(glyph.Char).Background = isSelected ? SelectedCharBrush : null;
@@ -306,7 +315,6 @@ namespace FontGenerator
 				btnAddChar.Content = StrBtnCanAdd;
 				btnAddChar.IsEnabled = !charSet.GlyphInRange(ch);
 			}
-
 		}
 
 		void LoadProject(string fileName)
@@ -525,44 +533,44 @@ namespace FontGenerator
 			Settings.Default.Save();
 		}
 
-		private void CharSet_MouseDown(object sender, MouseButtonEventArgs e)
+		private void CharSet_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+		{
+			// Select single character
+			m_lastCharChode = ((TextBlock)sender).Text[0];
+			ToggleGlyph(CurrentCharSet, m_lastCharChode);
+			m_fDragging = false;
+		}
+
+		private void CharSet_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+		{
+			m_fDragging = false;
+			m_lastCharChode = -1;
+		}
+
+		private void CharSet_MouseEnter(object sender, MouseEventArgs e)
 		{
 			CharSet charSet;
-			TextBlock textBlock;
 			int charCode;
-			int i;
+
+			if (e.LeftButton != MouseButtonState.Pressed || m_lastCharChode == -1)
+				return;
 
 			charSet = CurrentCharSet;
-			textBlock = (TextBlock)sender;
-			charCode = textBlock.Text[0];
+			charCode = ((TextBlock)sender).Text[0];
 
-			if (charSet.FirstChar == charSet.LastChar)
+			if (!m_fDragging)
 			{
-				if (charSet.FirstChar > charCode)
-					charSet.FirstChar = charCode;
-				else
-					charSet.LastChar = charCode;
-
-				ShowSelectedChar(charSet, true);
+				// Just starting drag, remove existing range
+				ShowCharRange(charSet, false);
+				m_fDragging = true;
+				charSet.FirstChar = m_lastCharChode;
+				ToggleGlyph(charSet, m_lastCharChode);
 			}
 			else
-			{
-				if (e.LeftButton == MouseButtonState.Pressed)
-				{
-					// remove existing range
-					for (i = charSet.FirstChar; i <= charSet.LastChar; i++)
-						GetCharTableElement(i).Background = null;
+				ShowCharRange(charSet, false);
 
-					charSet.FirstChar = charCode;
-					charSet.LastChar = charCode;
-					textBlock.Background = SelectedCharSequenceBrush;
-				}
-				else
-				{
-					// Selecting single character
-					ToggleGlyph(charSet, charCode);
-				}
-			}
+			charSet.LastChar = charCode;
+			ShowAllSelectedChar(charSet);
 		}
 
 		private void btnShow_Click(object sender, RoutedEventArgs e)
@@ -594,9 +602,9 @@ namespace FontGenerator
 
 			// Clear character table for old selection
 			if (e.RemovedItems.Count > 0)
-				ShowSelectedChar((CharSet)e.RemovedItems[0], false);
+				ShowAllSelectedChar((CharSet)e.RemovedItems[0], false);
 
-			ShowSelectedChar(charSet, true);
+			ShowAllSelectedChar(charSet, true);
 			CurrentFont.CharSet = charSet;
 			lstNamedChar.ItemsSource = charSet.Glyphs;
 			CharSetSelected();

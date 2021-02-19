@@ -7,20 +7,23 @@ namespace FontGenerator
 {
 	public record FontBits
 	(
-		string name, 
-		byte[] arPx, 
-		int[] arWidth, 
-		int strideChar, 
-		int strideFont, 
-		int height, 
+		string name,
+		byte[] arPx,
+		int[] arWidth,
+		int strideChar,
+		int strideFont,
+		int height,
 		int fontHeight,
-		int chFirst, 
+		int chFirst,
 		int cntChar,
 		FontChar font
 	);
 
 	public class CharSet : NamedItem
 	{
+		int m_charFirst = ' ';
+		int m_charLast = 0x7E;
+
 		public class Glyph : NamedItem
 		{
 			public int Char { get; set; }
@@ -39,12 +42,22 @@ namespace FontGenerator
 		}
 
 		public ObservableCollection<Glyph> Glyphs { get; set; } = new();
-		public int FirstChar { get; set; } = ' ';
-		public int LastChar { get; set; } = 0x7E;
+
+		public int FirstChar
+		{
+			get => m_charFirst > m_charLast ? m_charLast : m_charFirst;
+			set => m_charFirst = value;
+		}
+
+		public int LastChar
+		{
+			get => m_charFirst > m_charLast ? m_charFirst : m_charLast;
+			set => m_charLast = value;
+		}
 
 		public void AddGlyph(int ch, string name)
 		{
-			Glyphs.Add(new() { Name = name, Char = ch});
+			Glyphs.Add(new() { Name = name, Char = ch });
 		}
 
 		public int ContainsGlyphPos(int ch)
@@ -117,7 +130,7 @@ namespace FontGenerator
 
 			height = bmp.PixelHeight;
 			maxWidth = stride * cChars; // stride of full row
-			maxWidth = (maxWidth + 3) & ~3;	// align to 4-byte boundary
+			maxWidth = (maxWidth + 3) & ~3; // align to 4-byte boundary
 			arbFont = new byte[height * maxWidth];
 			for (i = 0; i < height; i++)
 			{
