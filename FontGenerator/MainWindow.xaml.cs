@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -32,7 +33,10 @@ namespace FontGenerator
 		const string StrNamedCharNameLabel = "Character Name:";
 		const string StrProjectFileFilter = "Font Files|*.fnt|All Files|*.*";
 		const string StrUntitledProject = "Untitled";
+		const string StrBtnCanAdd = "Add";
+		const string StrBtnCantAdd = "Remove";
 
+		const double DefaultTheshold = 65;
 		static readonly double[] FontSizes = { 16, 18, 20, 24, 32, 48, 64, 72, 96 };
 		static readonly Brush CharBorderBrush = new SolidColorBrush(Colors.Black);
 		public static readonly Brush CharTableLabelBrush = new SolidColorBrush(Colors.PaleTurquoise);
@@ -48,6 +52,7 @@ namespace FontGenerator
 			public ObservableCollection<FontInfo> FontInfos { get; set; }
 			public ObservableCollection<CharSet> CharSets { get; set; }
 			public bool GenerateXml { get; set; }
+			public bool Stride16Bit { get; set; }
 			public bool PreSerialize(bool fShowError)
 			{
 				foreach (FontInfo fontInfo in FontInfos)
@@ -88,7 +93,6 @@ namespace FontGenerator
 		public MainWindow()
 		{
 			InitializeComponent();
-			DataContext = this;
 		}
 
 		#endregion
@@ -118,6 +122,7 @@ namespace FontGenerator
 				m_projectFileName = value;
 			}
 		}
+
 		FontInfo CurrentFont
 		{
 			get
@@ -181,6 +186,8 @@ namespace FontGenerator
 			if (rowEnd <= m_lastRow)
 				return;
 
+			this.Cursor = Cursors.Wait;
+
 			borderMargin = new Thickness(-0.5);
 			borderThickness = new Thickness(1);
 			textPadding = new Thickness(5);
@@ -240,6 +247,7 @@ namespace FontGenerator
 			}
 
 			m_lastRow = rowEnd;
+			this.Cursor = null;
 		}
 
 		TextBlock GetCharTableElement(int i)
@@ -260,6 +268,47 @@ namespace FontGenerator
 				GetCharTableElement(glyph.Char).Background = isSelected ? SelectedCharBrush : null;
 		}
 
+		void ToggleGlyph(CharSet charSet, int charCode)
+		{
+			int i = charSet.ContainsGlyphPos(charCode);
+			if (i >= 0)
+			{
+				// Remove it
+				charSet.Glyphs.RemoveAt(i);
+				GetCharTableElement(charCode).Background =
+					(charCode >= charSet.FirstChar && charCode <= charSet.LastChar) ? SelectedCharSequenceBrush : null;
+			}
+			else
+			{
+				// Not present
+				if (charSet.GlyphInRange(charCode))
+					return; // already included
+
+				charSet.AddGlyph(charCode, $"CharCode_{charCode:X04}");
+				GetCharTableElement(charCode).Background = SelectedCharBrush;
+			}
+			UpdateCharAddButton(charCode);
+		}
+
+		void UpdateCharAddButton(int ch)
+		{
+			CharSet charSet;
+
+			charSet = CurrentCharSet;
+			if (charSet.ContainsGlyphPos(ch) >= 0)
+			{
+				// In the set of glyphs
+				btnAddChar.Content = StrBtnCantAdd;
+				btnAddChar.IsEnabled = true;
+			}
+			else
+			{
+				btnAddChar.Content = StrBtnCanAdd;
+				btnAddChar.IsEnabled = !charSet.GlyphInRange(ch);
+			}
+
+		}
+
 		void LoadProject(string fileName)
 		{
 			int maxRow;
@@ -268,6 +317,8 @@ namespace FontGenerator
 			m_project = JsonSerializer.Deserialize<Project>(m_serializedProject);
 			m_project.PostDeserialize();
 			chkGenerateXml.IsChecked = m_project.GenerateXml;
+			rad8Bit.IsChecked = !m_project.Stride16Bit;
+			rad16Bit.IsChecked = m_project.Stride16Bit;
 			ProjectFileName = Path.GetFullPath(fileName);
 			Settings.Default.LastProjectFileName = ProjectFileName;
 
@@ -319,6 +370,8 @@ namespace FontGenerator
 			m_project.FontInfos.Add(new() { Name = StrEmptyItem });
 
 			chkGenerateXml.IsChecked = m_project.GenerateXml;
+			rad8Bit.IsChecked = !m_project.Stride16Bit;
+			rad16Bit.IsChecked = m_project.Stride16Bit;
 			ShowProject();
 
 			// Remember our state
@@ -346,7 +399,8 @@ namespace FontGenerator
 				fontInfo.FontFamily = (FontFamily)drpFontFamily.SelectedItem;
 				fontInfo.Typeface = (FamilyTypeface)drpFontStyle.SelectedItem;
 				double.TryParse(drpFontSize.Text, out double size);
-				fontInfo.Size = size;	// default to zero if conversion failed
+				fontInfo.Size = size;   // default to zero if conversion failed
+				fontInfo.Threshold = (int)sldThreshold.Value;
 			}
 			else
 			{
@@ -354,6 +408,7 @@ namespace FontGenerator
 				drpFontStyle.SelectedItem = fontInfo.Typeface;
 				drpFontSize.SelectedItem = fontInfo.Size;
 				drpFontSize.Text = fontInfo.Size.ToString();
+				sldThreshold.Value = fontInfo.Threshold;
 			}
 
 			// If it doesn't have a CharSet, use current
@@ -391,6 +446,7 @@ namespace FontGenerator
 			txtItemName.Text = glyph.Name;
 			m_namedItem = glyph;
 			m_curList = lstNamedChar;
+			txtHexChar.Text = glyph.Char.ToString("X");
 		}
 
 		bool CheckForSave()
@@ -441,6 +497,8 @@ namespace FontGenerator
 
 		private void Window_Initialized(object sender, EventArgs e)
 		{
+			DataContext = this;
+			sldThreshold.Value = DefaultTheshold;
 
 			drpFontFamily.ItemsSource = Fonts.SystemFontFamilies;
 			drpFontFamily.SelectedIndex = 0;
@@ -472,6 +530,7 @@ namespace FontGenerator
 			CharSet charSet;
 			TextBlock textBlock;
 			int charCode;
+			int i;
 
 			charSet = CurrentCharSet;
 			textBlock = (TextBlock)sender;
@@ -491,7 +550,7 @@ namespace FontGenerator
 				if (e.LeftButton == MouseButtonState.Pressed)
 				{
 					// remove existing range
-					for (int i = charSet.FirstChar; i <= charSet.LastChar; i++)
+					for (i = charSet.FirstChar; i <= charSet.LastChar; i++)
 						GetCharTableElement(i).Background = null;
 
 					charSet.FirstChar = charCode;
@@ -501,24 +560,7 @@ namespace FontGenerator
 				else
 				{
 					// Selecting single character
-					// See if already present
-					for (int i = 0; i < charSet.Glyphs.Count; i++)
-					{
-						if (charSet.Glyphs[i].Char == charCode)
-						{
-							// Remove it
-							charSet.Glyphs.RemoveAt(i);
-							GetCharTableElement(charCode).Background =
-								(charCode >= charSet.FirstChar && charCode <= charSet.LastChar) ? SelectedCharSequenceBrush : null;
-							return;
-						}
-					}
-					// Not present
-					if (charCode >= charSet.FirstChar && charCode <= charSet.LastChar)
-						return;	// already included
-
-					charSet.AddGlyph(charCode, $"CharCode_{charCode:X04}");
-					GetCharTableElement(charCode).Background = SelectedCharBrush;
+					ToggleGlyph(charSet, charCode);
 				}
 			}
 		}
@@ -528,7 +570,7 @@ namespace FontGenerator
 			FontBits fontBits;
 			BitmapSource bmp;
 
-			fontBits = CurrentFont.GenerateFont();
+			fontBits = CurrentFont.GenerateFont(m_project.Stride16Bit);
 			bmp = BitmapSource.Create(fontBits.strideFont * 8, fontBits.height, 96, 96, PixelFormats.BlackWhite, null, fontBits.arPx, fontBits.strideFont);
 			new FontWindow(this, bmp, CurrentFont.Name).Show();
 		}
@@ -722,6 +764,7 @@ namespace FontGenerator
 		{
 			FileGenerator output;
 			string fileName;
+			FontBits fontBits;
 
 			if (m_project.FontInfos.Count == 0)
 				return;
@@ -741,7 +784,22 @@ namespace FontGenerator
 			foreach (FontInfo fontInfo in m_project.FontInfos)
 			{
 				if (fontInfo.Name != StrEmptyItem)
-					output.WriteFont(fontInfo.GenerateFont());
+				{
+					fontBits = fontInfo.GenerateFont(m_project.Stride16Bit);
+					if (m_project.Stride16Bit)
+					{
+						// Font needs to be in little-endian 16-bit chunks.
+						// Get there by swapping each pair of bytes.
+						for (int i = 0; i < fontBits.arPx.Length; i += 2)
+						{
+							byte b = fontBits.arPx[i];
+							fontBits.arPx[i] = fontBits.arPx[i + 1];
+							fontBits.arPx[i + 1] = b;
+						}
+
+					}
+					output.WriteFont(fontBits);
+				}
 			}
 
 			foreach (CharSet charSet in m_project.CharSets)
@@ -778,6 +836,50 @@ namespace FontGenerator
 		private void chkGenerateXml_Changed(object sender, RoutedEventArgs e)
 		{
 			m_project.GenerateXml = chkGenerateXml.IsChecked == true;
+		}
+
+		private void radStride_Changed(object sender, RoutedEventArgs e)
+		{
+			m_project.Stride16Bit = rad16Bit.IsChecked == true;
+		}
+
+		private void sldThreshold_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+		{
+			FontInfo info = CurrentFont;
+			if (info != null)
+				info.Threshold = (int)sldThreshold.Value;
+			txtThreshold.Text = ((int)sldThreshold.Value).ToString() + '%';
+		}
+
+		private void txtHexChar_TextChanged(object sender, TextChangedEventArgs e)
+		{
+			if (int.TryParse(txtHexChar.Text, NumberStyles.AllowHexSpecifier, null, out int ch))
+			{
+				txtChar.Text = ((char)ch).ToString();
+				UpdateCharAddButton(ch);
+			}
+		}
+
+		private void btnAddChar_Click(object sender, RoutedEventArgs e)
+		{
+			int ch = int.Parse(txtHexChar.Text, NumberStyles.AllowHexSpecifier);
+			ToggleGlyph(CurrentCharSet, ch);
+		}
+
+		private void txtChar_TextChanged(object sender, TextChangedEventArgs e)
+		{
+			int ch;
+
+			if (txtChar.Text.Length == 0)
+			{
+				txtHexChar.Text = "";
+				btnAddChar.IsEnabled = false;
+			}
+			else
+			{
+				ch = txtChar.Text[0];
+				txtHexChar.Text = ch.ToString("X");
+			}
 		}
 
 		#endregion

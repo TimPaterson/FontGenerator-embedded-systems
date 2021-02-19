@@ -1,5 +1,6 @@
-﻿using System.Collections;
+﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
 namespace FontGenerator
@@ -25,21 +26,14 @@ namespace FontGenerator
 			public int Char { get; set; }
 		}
 
-		class Enumerator : IEnumerable
+		IEnumerable<int> AllGlyphs
 		{
-			public Enumerator(CharSet parent)
+			get
 			{
-				charSet = parent;
-			}
-
-			CharSet charSet;
-
-			public IEnumerator GetEnumerator()
-			{
-				for (int ch = charSet.FirstChar; ch <= charSet.LastChar; ch++)
+				for (int ch = FirstChar; ch <= LastChar; ch++)
 					yield return ch;
 
-				foreach (Glyph glyph in charSet.Glyphs)
+				foreach (Glyph glyph in Glyphs)
 					yield return glyph.Char;
 			}
 		}
@@ -53,13 +47,29 @@ namespace FontGenerator
 			Glyphs.Add(new() { Name = name, Char = ch});
 		}
 
-		public FontBits GenerateFont(FontChar font, string name, int GrayLevel = 500)
+		public int ContainsGlyphPos(int ch)
+		{
+			for (int i = 0; i < Glyphs.Count; i++)
+			{
+				if (Glyphs[i].Char == ch)
+					return i;
+			}
+			return -1;
+		}
+
+		public bool GlyphInRange(int ch)
+		{
+			return ch >= FirstChar && ch <= LastChar;
+		}
+
+		public FontBits GenerateFont(FontChar font, string name, int threshold, bool f16bits)
 		{
 			int i;
 			int cChars;
 			int maxWidth;
 			int stride;
 			int height;
+			int grayLevel;
 			byte[][] arCharset;
 			byte[] arbFont;
 			int[] arWidth;
@@ -67,6 +77,8 @@ namespace FontGenerator
 
 			if (LastChar < FirstChar && Glyphs.Count == 0)
 				return null;
+
+			grayLevel = threshold * (3 * 255) / 100;
 
 			// Let's remove any invidividual characters that are covered by the range
 			for (i = Glyphs.Count - 1; i >= 0; i--)
@@ -82,10 +94,11 @@ namespace FontGenerator
 			arWidth = new int[cChars];
 			maxWidth = 0;
 			i = 0;
-			foreach (int ch in new Enumerator(this))
+			foreach (int ch in AllGlyphs)
 			{
 				bmp = font.GetBitmap((char)ch);
-				arbFont = ConvertToMonochrome(bmp, GrayLevel);
+				arbFont = ConvertToMonochrome(bmp, grayLevel);
+				//arbFont = ConvertToBw(bmp);
 				arCharset[i] = arbFont;
 				arWidth[i] = bmp.PixelWidth;
 				if (bmp.PixelWidth > maxWidth)
@@ -95,8 +108,14 @@ namespace FontGenerator
 
 			// Copy individual characters into one array. All first rows,
 			// then all seconds rows, etc.
+			//
+			// stride of character
+			if (f16bits)
+				stride = ((maxWidth + 15) / 16) * 2;
+			else
+				stride = (maxWidth + 7) / 8;
+
 			height = bmp.PixelHeight;
-			stride = (maxWidth + 7) / 8;  // stride of character
 			maxWidth = stride * cChars; // stride of full row
 			maxWidth = (maxWidth + 3) & ~3;	// align to 4-byte boundary
 			arbFont = new byte[height * maxWidth];
@@ -113,6 +132,10 @@ namespace FontGenerator
 
 			return new FontBits(name, arbFont, arWidth, stride, maxWidth, height, (int)font.FontSize, FirstChar, cChars, font);
 		}
+
+		//****************************************************************************
+		// Manual converion to black & white. Uses a fixed (specified) threshold.
+		// Vertical lines come out perfectly straight.
 
 		protected byte[] ConvertToMonochrome(BitmapSource bmp, int GrayLevel)
 		{
@@ -150,6 +173,26 @@ namespace FontGenerator
 						j++;
 					}
 				}
+			}
+			return arPx;
+		}
+
+		//****************************************************************************
+		// Built-in conversion to black & white. The bitmap has gray scale due to
+		// anti-aliasing, and this converts that to a dithered pattern. The result
+		// is vertical lines with extra or missing dots.
+
+		protected byte[] ConvertToBw(BitmapSource bmp)
+		{
+			byte[] arPx;
+			int byteWidth;
+
+			byteWidth = (bmp.PixelWidth + 7) / 8;
+			arPx = new byte[bmp.PixelHeight * byteWidth];
+			if (arPx.Length != 0)
+			{
+				bmp = new FormatConvertedBitmap(bmp, PixelFormats.BlackWhite, null, 50);
+				bmp.CopyPixels(arPx, byteWidth, 0);
 			}
 			return arPx;
 		}

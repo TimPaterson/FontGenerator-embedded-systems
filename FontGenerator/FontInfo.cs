@@ -3,10 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
-using System.Text;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
-using System.Windows;
 using System.Windows.Data;
 using System.Windows.Markup;
 using System.Windows.Media;
@@ -49,6 +46,7 @@ namespace FontGenerator
 		}
 		public string CharSetName { get; set; }
 		public double Size { get; set; }
+		public int Threshold { get; set; }
 
 		[JsonIgnore]
 		public CharSet CharSet { get; set; }
@@ -75,7 +73,7 @@ namespace FontGenerator
 			}
 		}
 
-		public FontBits GenerateFont()
+		public FontBits GenerateFont(bool f16bits)
 		{
 			FontChar fontChar;
 
@@ -88,7 +86,7 @@ namespace FontGenerator
 				FontSize = Size
 			};
 
-			return CharSet.GenerateFont(fontChar, Name);
+			return CharSet.GenerateFont(fontChar, Name, Threshold, f16bits);
 		}
 	}
 

@@ -5,11 +5,14 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:FontGenerator"
         mc:Ignorable="d"
-        Title="MainWindow" Height="580" Width="548" Closing="Window_Closing" Initialized="Window_Initialized">
+        Title="MainWindow" Height="580" Width="600" Closing="Window_Closing" Initialized="Window_Initialized">
 	<Window.Resources>
 		<local:FontNameConverter x:Key="FontNameConverter"/>
 	</Window.Resources>
 	<Grid>
+		<TextBlock Margin="425,8,12,0" VerticalAlignment="Top" Text="Threshold" Width="112" TextAlignment="Center"/>
+		<Slider x:Name="sldThreshold" Margin="423,25,10,0" VerticalAlignment="Top" Maximum="100" TickPlacement="None" TickFrequency="10" ValueChanged="sldThreshold_ValueChanged"/>
+		<TextBlock x:Name="txtThreshold" Margin="425,43,12,0" VerticalAlignment="Top" Text="50%" Width="112" TextAlignment="Center"/>
 		<DockPanel Margin="10,0,10,0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
 			<GroupBox Header="Project" DockPanel.Dock="Top" HorizontalAlignment="Left">
 				<Grid>
@@ -20,11 +23,18 @@
 						<ColumnDefinition Width="*"></ColumnDefinition>
 						<ColumnDefinition Width="auto"></ColumnDefinition>
 					</Grid.ColumnDefinitions>
+					<Grid.RowDefinitions>
+						<RowDefinition Height="auto" />
+						<RowDefinition Height="auto" />
+					</Grid.RowDefinitions>
 					<Button x:Name="btnNew"  Grid.Column="0" Width="60" Content="New" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10,10,0,10" Click="btnNew_Click" />
 					<Button x:Name="btnOpen" Grid.Column="1" Width="60" Content="Open" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10,0,0,0" Click="btnOpen_Click" />
 					<Button x:Name="btnSave" Grid.Column="2" Width="60" Content="Save" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10,0,0,0" Click="btnSave_Click" />
 					<Button x:Name="btnGenerate" Grid.Column="3" Width="60" Content="Generate" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10,0,0,0" Click="btnGenerate_Click" />
 					<CheckBox x:Name="chkGenerateXml" Grid.Column="4" Content="Generate XML" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10,0,10,0" Checked="chkGenerateXml_Changed" Unchecked="chkGenerateXml_Changed"/>
+					<TextBlock HorizontalAlignment="Right" Margin="0,39,0,0" Grid.ColumnSpan="2" Text="Bitmap multiple: " VerticalAlignment="Top" Grid.RowSpan="2"/>
+					<RadioButton x:Name="rad8Bit" Content="8-bit" Grid.Row="1" Grid.Column="2" HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Top" Unchecked="radStride_Changed" Checked="radStride_Changed"/>
+					<RadioButton x:Name="rad16Bit" Content="16-bit" Grid.Row="1" Grid.Column="3" HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Top" Checked="radStride_Changed" Unchecked="radStride_Changed"/>
 				</Grid>
 			</GroupBox>
 			<GroupBox Header="Font" DockPanel.Dock="Top">
@@ -65,11 +75,17 @@
 			</GroupBox>
 			<Grid DockPanel.Dock="Top">
 				<Button x:Name="btnShow" Content="Show" HorizontalAlignment="Left" Margin="0,8,0,0" VerticalAlignment="Top" Click="btnShow_Click"/>
-				<TextBlock x:Name="lblItemName" Margin="48,10,0,0" Width="93" HorizontalAlignment="Left" VerticalAlignment="Top" TextAlignment="Right"/>
-				<TextBox x:Name="txtItemName" HorizontalAlignment="Left" Margin="146,9,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="100" KeyDown="txtItemName_KeyDown"/>
-				<Button x:Name="btnSaveName" Content="Save" HorizontalAlignment="Left" Margin="251,8,0,0" VerticalAlignment="Top" RenderTransformOrigin="0.492,0.724" Click="btnSaveName_Click"/>
-				<Button x:Name="btnDelete" Content="Delete" HorizontalAlignment="Left" Margin="285,8,0,0" VerticalAlignment="Top" Click="btnDelete_Click"/>
-				<Button x:Name="btnCancel" Content="Cancel" HorizontalAlignment="Left" Margin="330,8,0,0" VerticalAlignment="Top" Click="btnCancel_Click"/>
+				<TextBlock x:Name="lblItemName" Margin="38,10,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" TextAlignment="Right" Width="90"/>
+				<TextBox x:Name="txtItemName" HorizontalAlignment="Left" Margin="133,9,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="100" KeyDown="txtItemName_KeyDown"/>
+				<Button x:Name="btnSaveName" Content="Save" HorizontalAlignment="Left" Margin="238,8,0,0" VerticalAlignment="Top" RenderTransformOrigin="0.492,0.724" Click="btnSaveName_Click"/>
+				<Button x:Name="btnDelete" Content="Delete" HorizontalAlignment="Left" Margin="272,8,0,0" VerticalAlignment="Top" Click="btnDelete_Click"/>
+				<Button x:Name="btnCancel" Content="Cancel" HorizontalAlignment="Left" Margin="315,8,0,0" VerticalAlignment="Top" Click="btnCancel_Click"/>
+				<TextBlock HorizontalAlignment="Right" Margin="0,10,128,0" Text="Hex char code:" TextWrapping="Wrap" VerticalAlignment="Top"/>
+				<TextBox x:Name="txtHexChar" HorizontalAlignment="Right" Margin="0,9,83,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="40" 
+						 TextChanged="txtHexChar_TextChanged" MaxLength="4"/>
+				<TextBox x:Name="txtChar" HorizontalAlignment="Right" Margin="0,0,53,0" TextWrapping="Wrap" VerticalAlignment="Top" VerticalContentAlignment="Bottom" Width="25" 
+						 Height="28" FontSize="20" MaxLength="1" TextAlignment="Center" FontFamily="{Binding SelectedItem, ElementName=drpFontFamily}" TextChanged="txtChar_TextChanged"/>
+				<Button x:Name="btnAddChar" Content="Add" HorizontalAlignment="Right" Margin="507,8,0,0" VerticalAlignment="Top" Width="48" Click="btnAddChar_Click"/>
 			</Grid>
 			<Grid Margin="0,10,0,10" DockPanel.Dock="Top">
 				<Grid Width="120" HorizontalAlignment="Right">
