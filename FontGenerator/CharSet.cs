@@ -76,7 +76,7 @@ namespace FontGenerator
 			return ch >= FirstChar && ch <= LastChar;
 		}
 
-		public FontBits GenerateFont(FontChar font, string name, int threshold, bool f16bits)
+		public FontBits GenerateFont(FontChar font, string name, int threshold, double pixelOffset, bool f16bits)
 		{
 			int i;
 			int cChars;
@@ -110,7 +110,7 @@ namespace FontGenerator
 			i = 0;
 			foreach (int ch in AllGlyphs)
 			{
-				bmp = font.GetBitmap((char)ch);
+				bmp = font.GetBitmap((char)ch, pixelOffset);
 				arbFont = ConvertToMonochrome(bmp, grayLevel);
 				//arbFont = ConvertToBw(bmp);
 				arCharset[i] = arbFont;

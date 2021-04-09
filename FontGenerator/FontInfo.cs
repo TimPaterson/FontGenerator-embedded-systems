@@ -47,6 +47,7 @@ namespace FontGenerator
 		public string CharSetName { get; set; }
 		public double Size { get; set; }
 		public int Threshold { get; set; }
+		public double PixelOffset { get; set; }
 
 		[JsonIgnore]
 		public CharSet CharSet { get; set; }
@@ -86,7 +87,7 @@ namespace FontGenerator
 				FontSize = Size
 			};
 
-			return CharSet.GenerateFont(fontChar, Name, Threshold, f16bits);
+			return CharSet.GenerateFont(fontChar, Name, Threshold, PixelOffset, f16bits);
 		}
 	}
 

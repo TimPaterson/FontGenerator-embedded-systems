@@ -36,7 +36,7 @@ namespace FontGenerator
 		const string StrBtnCanAdd = "Add";
 		const string StrBtnCantAdd = "Remove";
 
-		const double DefaultTheshold = 65;
+		const double DefaultThreshold = 50;
 		static readonly double[] FontSizes = { 16, 18, 20, 24, 32, 48, 64, 72, 96 };
 		static readonly Brush CharBorderBrush = new SolidColorBrush(Colors.Black);
 		public static readonly Brush CharTableLabelBrush = new SolidColorBrush(Colors.PaleTurquoise);
@@ -325,8 +325,8 @@ namespace FontGenerator
 			m_project = JsonSerializer.Deserialize<Project>(m_serializedProject);
 			m_project.PostDeserialize();
 			chkGenerateXml.IsChecked = m_project.GenerateXml;
-			rad8Bit.IsChecked = !m_project.Stride16Bit;
 			rad16Bit.IsChecked = m_project.Stride16Bit;
+			rad8Bit.IsChecked = !m_project.Stride16Bit;
 			ProjectFileName = Path.GetFullPath(fileName);
 			Settings.Default.LastProjectFileName = ProjectFileName;
 
@@ -378,8 +378,8 @@ namespace FontGenerator
 			m_project.FontInfos.Add(new() { Name = StrEmptyItem });
 
 			chkGenerateXml.IsChecked = m_project.GenerateXml;
-			rad8Bit.IsChecked = !m_project.Stride16Bit;
 			rad16Bit.IsChecked = m_project.Stride16Bit;
+			rad8Bit.IsChecked = !m_project.Stride16Bit;
 			ShowProject();
 
 			// Remember our state
@@ -409,6 +409,7 @@ namespace FontGenerator
 				double.TryParse(drpFontSize.Text, out double size);
 				fontInfo.Size = size;   // default to zero if conversion failed
 				fontInfo.Threshold = (int)sldThreshold.Value;
+				fontInfo.PixelOffset = sldPixel.Value;
 			}
 			else
 			{
@@ -417,6 +418,7 @@ namespace FontGenerator
 				drpFontSize.SelectedItem = fontInfo.Size;
 				drpFontSize.Text = fontInfo.Size.ToString();
 				sldThreshold.Value = fontInfo.Threshold;
+				sldPixel.Value = fontInfo.PixelOffset;
 			}
 
 			// If it doesn't have a CharSet, use current
@@ -506,7 +508,7 @@ namespace FontGenerator
 		private void Window_Initialized(object sender, EventArgs e)
 		{
 			DataContext = this;
-			sldThreshold.Value = DefaultTheshold;
+			sldThreshold.Value = DefaultThreshold;
 
 			drpFontFamily.ItemsSource = Fonts.SystemFontFamilies;
 			drpFontFamily.SelectedIndex = 0;
@@ -887,6 +889,14 @@ namespace FontGenerator
 				ch = txtChar.Text[0];
 				txtHexChar.Text = ch.ToString("X");
 			}
+		}
+
+		private void sldPixel_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+		{
+			FontInfo info = CurrentFont;
+			if (info != null)
+				info.PixelOffset = sldPixel.Value;
+			txtPixel.Text = sldPixel.Value.ToString("F1");
 		}
 
 		#endregion

@@ -30,20 +30,20 @@ namespace FontGenerator
 			Background = new SolidColorBrush(Colors.Black);
 		}
 
-		public BitmapSource GetBitmap(char ch)
+		public BitmapSource GetBitmap(char ch, double pixelOffset)
 		{
 			RenderTargetBitmap bmp;
 			int height;
 
 			Text = ch.ToString();
 			Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-			Arrange(new Rect(DesiredSize));
-			height = (int)Math.Ceiling(DesiredSize.Height - 0.1);
+			Arrange(new Rect(pixelOffset, 0, DesiredSize.Width, DesiredSize.Height));
+			height = (int)(DesiredSize.Height + 0.9);
 			if (DesiredSize.Width == 0)
 				return new EmptyBitmapSource(height);
 
 			bmp = new RenderTargetBitmap(
-				(int)Math.Ceiling(DesiredSize.Width - 0.1), 
+				(int)(DesiredSize.Width + pixelOffset + 0.9), 
 				height, 
 				96, 96, PixelFormats.Pbgra32);
 			bmp.Render(this);

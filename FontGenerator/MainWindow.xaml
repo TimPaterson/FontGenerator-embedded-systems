@@ -10,9 +10,16 @@
 		<local:FontNameConverter x:Key="FontNameConverter"/>
 	</Window.Resources>
 	<Grid>
-		<TextBlock Margin="425,8,12,0" VerticalAlignment="Top" Text="Threshold" Width="112" TextAlignment="Center"/>
-		<Slider x:Name="sldThreshold" Margin="423,25,10,0" VerticalAlignment="Top" Maximum="100" TickPlacement="None" TickFrequency="10" ValueChanged="sldThreshold_ValueChanged"/>
-		<TextBlock x:Name="txtThreshold" Margin="425,43,12,0" VerticalAlignment="Top" Text="50%" Width="112" TextAlignment="Center"/>
+		<Grid Margin="425,5,0,0" HorizontalAlignment="Stretch" VerticalAlignment="Top">
+			<TextBlock Margin="0,8,12,0" VerticalAlignment="Top" Text="Threshold" TextAlignment="Center"/>
+			<Slider x:Name="sldThreshold" Margin="0,25,10,0" VerticalAlignment="Top" Maximum="100" TickPlacement="BottomRight" TickFrequency="10" ValueChanged="sldThreshold_ValueChanged"/>
+			<TextBlock x:Name="txtThreshold" Margin="0,50,12,0" VerticalAlignment="Top" Text="50%" TextAlignment="Center"/>
+		</Grid>
+		<Grid Margin="450,80,0,0" HorizontalAlignment="Stretch" VerticalAlignment="Top">
+			<TextBlock Margin="0,8,12,0" VerticalAlignment="Top" Text="Pixel Offset" TextAlignment="Center"/>
+			<Slider x:Name="sldPixel" Margin="0,25,10,0" VerticalAlignment="Top" Maximum="1" TickPlacement="BottomRight" TickFrequency=".1" IsSnapToTickEnabled="True" ValueChanged="sldPixel_ValueChanged"/>
+			<TextBlock x:Name="txtPixel" Margin="0,50,12,0" VerticalAlignment="Top" Text="0.0" TextAlignment="Center"/>
+		</Grid>
 		<DockPanel Margin="10,0,10,0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
 			<GroupBox Header="Project" DockPanel.Dock="Top" HorizontalAlignment="Left">
 				<Grid>
@@ -37,7 +44,7 @@
 					<RadioButton x:Name="rad16Bit" Content="16-bit" Grid.Row="1" Grid.Column="3" HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Top" Checked="radStride_Changed" Unchecked="radStride_Changed"/>
 				</Grid>
 			</GroupBox>
-			<GroupBox Header="Font" DockPanel.Dock="Top">
+			<GroupBox Header="Font" DockPanel.Dock="Top" HorizontalAlignment="Left">
 				<Grid>
 					<ComboBox x:Name="drpFontFamily" HorizontalAlignment="Left" Margin="10,10,0,10" VerticalAlignment="Top" Width="180" 
 							  Height="28" FontSize="16" SelectionChanged="drpFontFamily_SelectionChanged" VerticalContentAlignment="Center">
@@ -58,7 +65,7 @@
 							</DataTemplate>
 						</ComboBox.ItemTemplate>
 					</ComboBox>
-					<ComboBox x:Name="drpFontSize" HorizontalAlignment="Left" Margin="360,10,0,10" VerticalAlignment="Top" Width="52" 
+					<ComboBox x:Name="drpFontSize" HorizontalAlignment="Left" Margin="360,10,10,10" VerticalAlignment="Top" Width="52" 
 							  Height="28" FontSize="16" IsEditable="True" SelectionChanged="drpFontSize_SelectionChanged" 
 							  TextBoxBase.TextChanged="drpFontSize_TextChanged" VerticalContentAlignment="Center"/>
 				</Grid>
