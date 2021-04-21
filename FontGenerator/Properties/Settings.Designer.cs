@@ -70,5 +70,17 @@ namespace FontGenerator.Properties {
                 this["LastProjectFileName"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public double SampleHeight {
+            get {
+                return ((double)(this["SampleHeight"]));
+            }
+            set {
+                this["SampleHeight"] = value;
+            }
+        }
     }
 }

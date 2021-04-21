@@ -169,6 +169,8 @@ namespace FontGenerator
 				Settings.Default.SettingsUpgraded = true;
 				Settings.Default.Save();
 			}
+			if (Settings.Default.SampleHeight > 0)
+				grdMain.RowDefinitions[0].Height = new GridLength(Settings.Default.SampleHeight);
 			this.SetPlacement(Settings.Default.MainWindowPlacement);
 		}
 
@@ -531,6 +533,7 @@ namespace FontGenerator
 		private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
 		{
 			e.Cancel = CheckForSave();
+			Settings.Default.SampleHeight = grdMain.RowDefinitions[0].ActualHeight;
 			Settings.Default.MainWindowPlacement = this.GetPlacement();
 			Settings.Default.Save();
 		}
