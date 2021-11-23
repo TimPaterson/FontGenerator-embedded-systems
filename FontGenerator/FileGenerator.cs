@@ -34,7 +34,8 @@ namespace FontGenerator
 		const string StrDefineChar		= "DEFINE_CHAR";
 
 		const string StrXmlFont = "<Font Name='{0}' FontFamily='{1}' FontStyle='{2}' FontWeight='{3}' FontStretch='{4}' FontSize='{5}'/>";
-		const string StrXmlSize = "<Set>{0}_Height = {1}</Set>";
+		const string StrXmlHeight = "<Set>{0}_Height = {1}</Set>";
+		const string StrXmlWidth = "<Set>{0}_WidthZero = {1}</Set>";
 
 		StreamWriter Writer;
 		FileStream Stream;
@@ -153,7 +154,9 @@ namespace FontGenerator
 
 				font = fontBits.font;
 				Xml.WriteLine(StrXmlFont, fontBits.name, font.FontFamily, font.FontStyle, font.FontWeight, font.FontStretch, font.FontSize);
-				Xml.WriteLine(StrXmlSize, fontBits.name, fontBits.height);
+				Xml.WriteLine(StrXmlHeight, fontBits.name, fontBits.height);
+				if (fontBits.chFirst <= '0' && fontBits.chFirst + fontBits.cntChar > '0')
+					Xml.WriteLine(StrXmlWidth, fontBits.name, fontBits.arWidth['0' - fontBits.chFirst]);
 			}
 		}
 
